@@ -22,22 +22,23 @@ func RegisterHandler(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// Verificar si el usuario ya existe
+	// 🔍 Verificar si ya existe un usuario con el mismo email
 	var existing models.User
-	err := database.DB.Collection("users").FindOne(ctx, bson.M{"username": user.Username}).Decode(&existing)
+	err := database.DB.Collection("users").FindOne(ctx, bson.M{"email": user.Email}).Decode(&existing)
 	if err == nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "El usuario ya existe"})
+		c.JSON(http.StatusConflict, gin.H{"error": "El email ya está registrado"})
 		return
 	}
 
-	// Hashear contraseña
-	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), 10)
+	// 🔒 Hashear contraseña
+	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al procesar contraseña"})
 		return
 	}
 	user.Password = string(hash)
 
+	// 🗃️ Insertar nuevo usuario
 	_, err = database.DB.Collection("users").InsertOne(ctx, user)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al registrar usuario"})
