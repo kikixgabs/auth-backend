@@ -5,25 +5,37 @@ import (
 
 	"auth-backend/database"
 	"auth-backend/handlers"
-	"auth-backend/middleware"
+	"auth-backend/routes"
 
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	// 🧠 Primero conectamos la base de datos
-	database.Connect()
+	database.Connect("mongodb://localhost:27017", "todoapp")
 
 	router := gin.Default()
 
+	router.Use(func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:4200")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Authorization")
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	})
+
 	// Rutas públicas
 	router.POST("/register", handlers.RegisterHandler)
-	router.POST("/login", handlers.Login)
+	router.POST("/login", handlers.LoginHandler)
+	router.POST("/logout", handlers.LogoutHandler)
 
-	// Rutas protegidas
-	protected := router.Group("/protected")
-	protected.Use(middleware.AuthMiddleware())
-	protected.GET("", handlers.ProtectedHandler)
+	// Rutas protegidas (ToDos + Preferencias)
+	routes.RegisterRoutes(router)
 
 	fmt.Println("🚀 Servidor corriendo en http://localhost:8080")
 	router.Run(":8080")

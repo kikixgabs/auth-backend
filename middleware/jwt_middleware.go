@@ -29,12 +29,21 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		claims := token.Claims.(jwt.MapClaims)
+		c.Set("userId", claims["userId"])
 		c.Next()
 	}
 }
 
-// 💡 Utilidad para generar el token y setear cookie
 func SetAuthCookie(c *gin.Context, tokenString string) {
-	c.SetSameSite(http.SameSiteStrictMode)
-	c.SetCookie("token", tokenString, int(24*time.Hour.Seconds()), "/", "", true, true)
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie(
+		"token",
+		tokenString,
+		int(24*time.Hour.Seconds()),
+		"/",
+		"",
+		false,
+		true,
+	)
 }

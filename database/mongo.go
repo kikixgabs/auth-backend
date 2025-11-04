@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"time"
 
@@ -10,19 +9,27 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var DB *mongo.Database
+var Client *mongo.Client
+var UserCollection *mongo.Collection
+var TodoCollection *mongo.Collection
+var PreferencesCollection *mongo.Collection
 
-func Connect() {
-	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
-
+func Connect(uri string, dbName string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {
-		log.Fatal("❌ Error conectando a MongoDB:", err)
+		log.Fatal(err)
 	}
 
-	DB = client.Database("myappdb") // 👈 el mismo nombre que pusiste en Compass
-	fmt.Println("✅ Conectado a MongoDB correctamente")
+	Client = client
+	UserCollection = client.Database(dbName).Collection("users")
+	TodoCollection = client.Database(dbName).Collection("todos")
+	PreferencesCollection = client.Database(dbName).Collection("preferences") // 👈 agregamos esta línea
+}
+
+// 🔹 Función auxiliar para obtener cualquier colección por nombre
+func GetCollection(name string) *mongo.Collection {
+	return Client.Database("todoapp").Collection(name)
 }
