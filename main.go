@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"auth-backend/database"
 	"auth-backend/handlers"
@@ -11,7 +12,10 @@ import (
 )
 
 func main() {
-	database.Connect("mongodb://localhost:27017", "todoapp")
+
+	mongoURI := os.Getenv("mongoURI")
+
+	database.Connect(mongoURI, "todoappbd")
 
 	router := gin.Default()
 
