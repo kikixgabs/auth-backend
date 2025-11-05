@@ -10,4 +10,4 @@ vendor/
 .idea/
 
 # Env
-.env
+.env*
