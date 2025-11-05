@@ -41,7 +41,7 @@ func main() {
 
 	frontendURL := "http:/localhost:4200"
 	if env == "production" {
-		frontendURL = "https://kikixgabs.github.io/"
+		frontendURL = "https://kikixgabs.github.io"
 	}
 
 	router.Use(func(c *gin.Context) {
