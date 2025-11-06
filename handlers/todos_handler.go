@@ -68,6 +68,7 @@ func CreateTodo(c *gin.Context) {
 }
 
 // Actualizar un todo existente
+// Actualizar un todo existente
 func UpdateTodoHandler(c *gin.Context) {
 	idParam := c.Param("id")
 	objectID, err := primitive.ObjectIDFromHex(idParam)
@@ -75,6 +76,10 @@ func UpdateTodoHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
 		return
 	}
+
+	// 1. OBTENER EL USERID (igual que en GetTodos)
+	userIdStr, _ := c.Get("userId")
+	userId, _ := primitive.ObjectIDFromHex(userIdStr.(string))
 
 	var updatedTodo models.TodoItem
 	if err := c.ShouldBindJSON(&updatedTodo); err != nil {
@@ -85,7 +90,8 @@ func UpdateTodoHandler(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	collection := database.GetCollection("todos")
+	// 2. Usar 'database.TodoCollection' para ser consistente
+	collection := database.TodoCollection
 
 	update := bson.M{
 		"$set": bson.M{
@@ -94,18 +100,26 @@ func UpdateTodoHandler(c *gin.Context) {
 			"priority":  updatedTodo.Priority,
 			"order":     updatedTodo.Order,
 			"date":      updatedTodo.Date,
-			"subtask":   updatedTodo.Subtasks, // 👈 importante
+			"subtask":   updatedTodo.Subtasks, // 👈 Esto ahora funcionará
 		},
 	}
 
-	result, err := collection.UpdateOne(ctx, bson.M{"_id": objectID}, update)
+	// 3. CREAR EL FILTRO SEGURO
+	filter := bson.M{
+		"_id":    objectID, // El ID del "todo" debe coincidir
+		"userId": userId,   // Y el ID del usuario también debe coincidir
+	}
+
+	// 4. Usar el 'filter' en la consulta
+	result, err := collection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update todo"})
 		return
 	}
 
 	if result.MatchedCount == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Todo not found"})
+		// Ahora este error significa "No se encontró el 'todo' O no le pertenece"
+		c.JSON(http.StatusNotFound, gin.H{"error": "Todo not found or user unauthorized"})
 		return
 	}
 
@@ -117,12 +131,29 @@ func DeleteTodo(c *gin.Context) {
 	id := c.Param("id")
 	objId, _ := primitive.ObjectIDFromHex(id)
 
+	// 1. OBTENER EL USERID
+	userIdStr, _ := c.Get("userId")
+	userId, _ := primitive.ObjectIDFromHex(userIdStr.(string))
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	_, err := database.TodoCollection.DeleteOne(ctx, bson.M{"_id": objId})
+	// 2. CREAR EL FILTRO SEGURO
+	filter := bson.M{
+		"_id":    objId,
+		"userId": userId, // 👈 LA PARTE QUE FALTABA
+	}
+
+	// 3. Usar el 'filter' y verificar el resultado
+	result, err := database.TodoCollection.DeleteOne(ctx, filter)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 4. (Opcional pero recomendado) Verificar si se borró algo
+	if result.DeletedCount == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Todo not found or user unauthorized"})
 		return
 	}
 
