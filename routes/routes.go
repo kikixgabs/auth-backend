@@ -21,9 +21,9 @@ func RegisterRoutes(r *gin.Engine) {
 		{
 			todos.GET("", handlers.GetTodos)
 			todos.POST("", handlers.CreateTodo)
+			todos.PUT("/reorder", handlers.ReorderTodos)
 			todos.PUT("/:id", handlers.UpdateTodoHandler)
 			todos.DELETE("/:id", handlers.DeleteTodo)
-			todos.PUT("/reorder", handlers.ReorderTodos)
 		}
 	}
 }
