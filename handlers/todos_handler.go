@@ -68,30 +68,48 @@ func CreateTodo(c *gin.Context) {
 }
 
 // Actualizar un todo existente
-func UpdateTodo(c *gin.Context) {
-	id := c.Param("id")
-	objId, _ := primitive.ObjectIDFromHex(id)
-
-	var todo models.TodoItem
-	if err := c.ShouldBindJSON(&todo); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos"})
+func UpdateTodoHandler(c *gin.Context) {
+	idParam := c.Param("id")
+	objectID, err := primitive.ObjectIDFromHex(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	var updatedTodo models.TodoItem
+	if err := c.ShouldBindJSON(&updatedTodo); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	_, err := database.TodoCollection.UpdateOne(
-		ctx,
-		bson.M{"_id": objId},
-		bson.M{"$set": todo},
-	)
+	collection := database.GetCollection("todos")
+
+	update := bson.M{
+		"$set": bson.M{
+			"content":   updatedTodo.Content,
+			"completed": updatedTodo.Completed,
+			"priority":  updatedTodo.Priority,
+			"order":     updatedTodo.Order,
+			"date":      updatedTodo.Date,
+			"subtask":   updatedTodo.Subtasks, // 👈 importante
+		},
+	}
+
+	result, err := collection.UpdateOne(ctx, bson.M{"_id": objectID}, update)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update todo"})
 		return
 	}
 
-	c.JSON(http.StatusOK, todo)
+	if result.MatchedCount == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Todo not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, updatedTodo)
 }
 
 // Borrar un todo
