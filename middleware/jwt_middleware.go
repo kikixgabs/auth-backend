@@ -36,14 +36,15 @@ func AuthMiddleware() gin.HandlerFunc {
 }
 
 func SetAuthCookie(c *gin.Context, tokenString string) {
-	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetSameSite(http.SameSiteNoneMode)
 	c.SetCookie(
 		"token",
 		tokenString,
 		int(24*time.Hour.Seconds()),
 		"/",
-		"",
-		false,
-		true,
+		"auth-backend-production-414c.up.railway.app", // dominio explícito
+		true, // secure = true, porque estás en https
+		true, // httpOnly
 	)
+
 }
