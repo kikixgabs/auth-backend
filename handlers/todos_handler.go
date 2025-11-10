@@ -118,7 +118,6 @@ func UpdateTodoHandler(c *gin.Context) {
 	}
 
 	if result.MatchedCount == 0 {
-		// Ahora este error significa "No se encontró el 'todo' O no le pertenece"
 		c.JSON(http.StatusNotFound, gin.H{"error": "Todo not found or user unauthorized"})
 		return
 	}
@@ -126,22 +125,19 @@ func UpdateTodoHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, updatedTodo)
 }
 
-// Borrar un todo
 func DeleteTodo(c *gin.Context) {
 	id := c.Param("id")
 	objId, _ := primitive.ObjectIDFromHex(id)
 
-	// 1. OBTENER EL USERID
 	userIdStr, _ := c.Get("userId")
 	userId, _ := primitive.ObjectIDFromHex(userIdStr.(string))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// 2. CREAR EL FILTRO SEGURO
 	filter := bson.M{
 		"_id":    objId,
-		"userId": userId, // 👈 LA PARTE QUE FALTABA
+		"userId": userId,
 	}
 
 	// 3. Usar el 'filter' y verificar el resultado

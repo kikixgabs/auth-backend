@@ -2,14 +2,17 @@ package middleware
 
 import (
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var SecretKey = []byte("clave_super_secreta")
+// 🔐 Clave secreta desde .env
+var SecretKey = []byte(os.Getenv("JWT_SECRET"))
 
+// Middleware de autenticación
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString, err := c.Cookie("token")
@@ -35,16 +38,25 @@ func AuthMiddleware() gin.HandlerFunc {
 	}
 }
 
+// Configura la cookie del token según entorno
 func SetAuthCookie(c *gin.Context, tokenString string) {
+	env := os.Getenv("APP_ENV")
+	domain := "localhost"
+	secure := true
+
+	if env == "production" {
+		domain = "auth-backend-production-414c.up.railway.app"
+		secure = true
+	}
+
 	c.SetSameSite(http.SameSiteNoneMode)
 	c.SetCookie(
 		"token",
 		tokenString,
 		int(24*time.Hour.Seconds()),
 		"/",
-		"auth-backend-production-414c.up.railway.app", // dominio explícito
-		true, // secure = true, porque estás en https
-		true, // httpOnly
+		domain,
+		secure,
+		true,
 	)
-
 }
