@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -42,21 +43,21 @@ func AuthMiddleware() gin.HandlerFunc {
 func SetAuthCookie(c *gin.Context, tokenString string) {
 	env := os.Getenv("APP_ENV")
 	domain := "localhost"
-	secure := true
+	//secure := true
 
 	if env == "production" {
 		domain = "auth-backend-production-414c.up.railway.app"
-		secure = true
+		//secure = true
 	}
 
-	c.SetSameSite(http.SameSiteNoneMode)
-	c.SetCookie(
-		"token",
+	cookie := fmt.Sprintf(
+		"token=%s; Path=/; Max-Age=%d; Domain=%s; HttpOnly; Secure; SameSite=None; Partitioned; Priority=High",
 		tokenString,
 		int(24*time.Hour.Seconds()),
-		"/",
 		domain,
-		secure,
-		true,
 	)
+
+	c.Writer.Header().Add("Set-Cookie", cookie)
+
+	c.SetSameSite(http.SameSiteNoneMode)
 }
