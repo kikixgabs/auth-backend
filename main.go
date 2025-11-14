@@ -69,6 +69,7 @@ func main() {
 	router.POST("/register", handlers.RegisterHandler)
 	router.POST("/login", handlers.LoginHandler)
 	router.POST("/logout", handlers.LogoutHandler)
+	router.POST("/check-email", handlers.CheckEmailHandler)
 
 	// 🛣️ Rutas privadas (registradas en routes.go)
 	routes.RegisterRoutes(router)

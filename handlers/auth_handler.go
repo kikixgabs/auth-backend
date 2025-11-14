@@ -97,3 +97,22 @@ func LogoutHandler(c *gin.Context) {
 	)
 	c.JSON(http.StatusOK, gin.H{"message": "Sesión cerrada correctamente"})
 }
+
+func CheckEmailHandler(c *gin.Context) {
+	var data struct {
+		Email string `json:"email"`
+	}
+
+	if err := c.ShouldBindJSON(&data); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"inUse": false})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var user models.User
+	err := database.UserCollection.FindOne(ctx, bson.M{"email": data.Email}).Decode(&user)
+
+	c.JSON(http.StatusOK, gin.H{"inUse": err == nil})
+}
