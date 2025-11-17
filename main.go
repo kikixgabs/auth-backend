@@ -7,6 +7,7 @@ import (
 
 	"auth-backend/database"
 	"auth-backend/handlers"
+	"auth-backend/middleware"
 	"auth-backend/routes"
 
 	"github.com/gin-gonic/gin"
@@ -30,6 +31,8 @@ func main() {
 			log.Println("⚠️ No se pudo cargar .env.production, usando variables del sistema")
 		}
 	}
+
+	middleware.LoadSecret()
 
 	mongoURI := os.Getenv("MONGODB_URI")
 	dbName := os.Getenv("MONGODB_NAME")
@@ -70,6 +73,7 @@ func main() {
 	router.POST("/login", handlers.LoginHandler)
 	router.POST("/logout", handlers.LogoutHandler)
 	router.POST("/check-email", handlers.CheckEmailHandler)
+	router.GET("/auth/me", handlers.AuthMeHandler(database.UserCollection))
 
 	// 🛣️ Rutas privadas (registradas en routes.go)
 	routes.RegisterRoutes(router)
